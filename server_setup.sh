@@ -4,8 +4,8 @@
 # This script should be run with sudo privileges
 
 # Configuration variables - MODIFY THESE ACCORDING TO YOUR NEEDS
-STATIC_IP="192.168.1.10/24"
-GATEWAY="192.168.1.1"
+STATIC_IP="192.168.0.101/24"
+GATEWAY="192.168.0.1"
 SSH_PORT="2222"
 DOMAIN_NAME="inelitesclub.com"   # Your actual domain name
 DB_PASSWORD=$(openssl rand -base64 32) # Generates a secure random password
