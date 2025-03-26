@@ -1,0 +1,26 @@
+# Credentials and sensitive information
+server_credentials.txt
+*.pem
+*.key
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+*.env
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
