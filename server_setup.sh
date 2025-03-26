@@ -139,7 +139,7 @@ check_status "Firewall configuration"
 log_message "Setting static IP address..."
 
 # Get primary interface
-PRIMARY_INTERFACE=$(ip -o route get 1 | awk '{for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}' | head -1 | tr -d '[:space:]')
+PRIMARY_INTERFACE=$(ip route | awk '/default/ {print $5}' | head -n1)
 [ -z "$PRIMARY_INTERFACE" ] && { echo "ERROR: Could not determine primary network interface"; exit 1; }
 
 log_message "Using network interface: $PRIMARY_INTERFACE"
@@ -149,17 +149,18 @@ NETPLAN_FILE="/etc/netplan/01-netcfg.yaml"
 mkdir -p /etc/netplan
 cat > "$NETPLAN_FILE" << EOF
 network:
-  version: 2
-  renderer: networkd
-  ethernets:
-    $PRIMARY_INTERFACE:
-      dhcp4: no
-      addresses: [$STATIC_IP]
-      routes:
-        - to: default
-          via: $GATEWAY
-      nameservers:
-        addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
+    version: 2
+    renderer: networkd
+    ethernets:
+        $PRIMARY_INTERFACE:
+            dhcp4: no
+            addresses:
+                - $STATIC_IP
+            routes:
+                - to: default
+                  via: $GATEWAY
+            nameservers:
+                addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
 EOF
 
 # Set proper permissions
