@@ -4,6 +4,7 @@
 # This script should be run with sudo privileges
 
 # Configuration variables - MODIFY THESE ACCORDING TO YOUR NEEDS
+# write command for ip a to find static ip
 STATIC_IP="192.168.0.101/24"
 GATEWAY="192.168.0.1"
 SSH_PORT="2222"
@@ -186,7 +187,7 @@ network:
       addresses: [$STATIC_IP]
       gateway4: $GATEWAY
       nameservers:
-        addresses: [1.1.1.1, 8.8.8.8]
+        addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
 EOF
     # Set proper permissions
     chmod 600 "$NETPLAN_FILE"
