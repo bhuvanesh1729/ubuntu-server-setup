@@ -139,7 +139,7 @@ check_status "Firewall configuration"
 log_message "Setting static IP address..."
 
 # Get primary interface
-PRIMARY_INTERFACE=$(ip -o route get 1 | sed -n 's/.*dev \([^\ ]*\).*/\1/p')
+PRIMARY_INTERFACE=$(ip -o route get 1 | awk '{for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}' | head -1 | tr -d '[:space:]')
 [ -z "$PRIMARY_INTERFACE" ] && { echo "ERROR: Could not determine primary network interface"; exit 1; }
 
 log_message "Using network interface: $PRIMARY_INTERFACE"
@@ -239,7 +239,13 @@ else
 fi
 
 # Add reminder about SSH key setup
-log_message "IMPORTANT: After setting up SSH keys, edit /etc/ssh/sshd_config and set PasswordAuthentication to 'no'"
+log_message "IMPORTANT: Follow these steps to secure SSH access:"
+log_message "1. On your local machine, create SSH key: ssh-keygen -t ed25519"
+log_message "2. Copy key to server: ssh-copy-id -p $SSH_PORT user@<server-ip>"
+log_message "3. Test SSH key login: ssh -p $SSH_PORT user@<server-ip>"
+log_message "4. After confirming SSH key works, disable password auth:"
+log_message "   sudo sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config"
+log_message "   sudo systemctl restart ssh"
 
 # Install and configure Fail2ban
 log_message "Configuring Fail2ban..."
