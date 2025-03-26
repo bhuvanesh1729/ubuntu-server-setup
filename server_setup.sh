@@ -190,8 +190,17 @@ network:
 EOF
     # Set proper permissions
     chmod 600 "$NETPLAN_FILE"
-    netplan apply
-    check_status "Static IP configuration"
+    
+    # Try the configuration first
+    log_message "Testing netplan configuration..."
+    if netplan try; then
+        log_message "Netplan configuration test successful, applying permanently..."
+        netplan apply
+        check_status "Static IP configuration"
+    else
+        log_message "ERROR: Netplan configuration test failed, rolling back changes"
+        exit 1
+    fi
 
     # List updated netplan files
     log_message "Updated netplan files:"
@@ -695,4 +704,3 @@ log_message "4. Configure your Nextcloud admin account at https://$DOMAIN_NAME"
 log_message "5. After recording necessary information:"
 log_message "   - Secure copy and delete ~/server_credentials.txt"
 log_message "   - Delete ~/server-info.html"
-log_message "6. Consider setting up a backup solution"
