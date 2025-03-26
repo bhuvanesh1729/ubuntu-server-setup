@@ -176,19 +176,19 @@ chmod 600 "$NETPLAN_FILE"
 
 # Configure network
 if [ -f "$NETPLAN_FILE" ]; then
-    log_message "Using netplan file: $NETPLAN_FILE"
     log_message "Using network interface: $PRIMARY_INTERFACE"
     cat > "$NETPLAN_FILE" << EOF
 network:
-  version: 2
-  renderer: NetworkManager
-  ethernets:
-    $PRIMARY_INTERFACE:
-      dhcp4: no
-      addresses: [$STATIC_IP]
-      gateway4: $GATEWAY
-      nameservers:
-        addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
+    version: 2
+    renderer: networkd
+    ethernets:
+        $PRIMARY_INTERFACE:
+            dhcp4: no
+            addresses:
+                - $STATIC_IP
+            gateway4: $GATEWAY
+            nameservers:
+                addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
 EOF
     # Set proper permissions
     chmod 600 "$NETPLAN_FILE"
