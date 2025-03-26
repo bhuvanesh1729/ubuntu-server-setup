@@ -158,7 +158,7 @@ if [ -z "$PRIMARY_INTERFACE" ]; then
     # Fallback if no default route exists
     PRIMARY_INTERFACE=$(ip -o link show | grep -v lo | awk -F': ' '{print $2}' | head -1)
 fi
-log_message "Using network interface: $PRIMARY_INTERFACE"
+# Log message moved to avoid duplication
 
 # Set the primary netplan file
 NETPLAN_FILE="/etc/netplan/01-network-manager-all.yaml"
@@ -177,6 +177,7 @@ chmod 600 "$NETPLAN_FILE"
 # Configure network
 if [ -f "$NETPLAN_FILE" ]; then
     log_message "Using netplan file: $NETPLAN_FILE"
+    log_message "Using network interface: $PRIMARY_INTERFACE"
     cat > "$NETPLAN_FILE" << EOF
 network:
   version: 2
