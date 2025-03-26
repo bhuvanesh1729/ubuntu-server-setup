@@ -149,15 +149,17 @@ NETPLAN_FILE="/etc/netplan/01-netcfg.yaml"
 mkdir -p /etc/netplan
 cat > "$NETPLAN_FILE" << EOF
 network:
-    version: 2
-    renderer: networkd
-    ethernets:
-        ${PRIMARY_INTERFACE}:
-            dhcp4: no
-            addresses: [$STATIC_IP]
-            gateway4: $GATEWAY
-            nameservers:
-                addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
+  version: 2
+  renderer: networkd
+  ethernets:
+    $PRIMARY_INTERFACE:
+      dhcp4: no
+      addresses: [$STATIC_IP]
+      routes:
+        - to: default
+          via: $GATEWAY
+      nameservers:
+        addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
 EOF
 
 # Set proper permissions
