@@ -182,10 +182,9 @@ network:
     version: 2
     renderer: networkd
     ethernets:
-        $PRIMARY_INTERFACE:
+        ${PRIMARY_INTERFACE}:
             dhcp4: no
-            addresses:
-                - $STATIC_IP
+            addresses: [$STATIC_IP]
             gateway4: $GATEWAY
             nameservers:
                 addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
