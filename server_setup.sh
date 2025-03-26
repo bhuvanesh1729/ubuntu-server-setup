@@ -136,21 +136,52 @@ check_status "Firewall configuration"
 
 # Set static IP address
 log_message "Setting static IP address..."
-# Find the primary netplan file (usually 01-network-manager-all.yaml or similar)
-NETPLAN_FILE="/etc/netplan/01-network-manager-all.yaml"
-if [ ! -f "$NETPLAN_FILE" ]; then
-    # Try to find any netplan file if the default one doesn't exist
-    NETPLAN_FILE=$(find /etc/netplan/ -name "*.yaml" | head -1)
+
+# Create netplan directory if it doesn't exist
+if [ ! -d "/etc/netplan" ]; then
+    mkdir -p /etc/netplan
+    log_message "Created /etc/netplan directory"
 fi
 
-if [ -n "$NETPLAN_FILE" ] && [ -f "$NETPLAN_FILE" ]; then
+# List current netplan files
+log_message "Current netplan files:"
+ls -la /etc/netplan/
+
+# Show current network interfaces
+log_message "Current network interfaces:"
+ip a
+
+# Determine primary network interface
+PRIMARY_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
+if [ -z "$PRIMARY_INTERFACE" ]; then
+    # Fallback if no default route exists
+    PRIMARY_INTERFACE=$(ip -o link show | grep -v lo | awk -F': ' '{print $2}' | head -1)
+fi
+log_message "Using network interface: $PRIMARY_INTERFACE"
+
+# Set the primary netplan file
+NETPLAN_FILE="/etc/netplan/01-network-manager-all.yaml"
+
+# Create or modify the netplan file
+if [ -f "$NETPLAN_FILE" ]; then
+    log_message "Using existing netplan file: $NETPLAN_FILE"
+else
+    log_message "Creating new netplan file: $NETPLAN_FILE"
+    touch "$NETPLAN_FILE"
+fi
+
+# Ensure proper permissions before writing
+chmod 600 "$NETPLAN_FILE"
+
+# Configure network
+if [ -f "$NETPLAN_FILE" ]; then
     log_message "Using netplan file: $NETPLAN_FILE"
     cat > "$NETPLAN_FILE" << EOF
 network:
   version: 2
   renderer: networkd
   ethernets:
-    $(ip -o -4 route show to default | awk '{print $5}'):
+    $PRIMARY_INTERFACE:
       dhcp4: no
       addresses: [$STATIC_IP]
       gateway4: $GATEWAY
@@ -161,8 +192,12 @@ EOF
     chmod 600 "$NETPLAN_FILE"
     netplan apply
     check_status "Static IP configuration"
+
+    # List updated netplan files
+    log_message "Updated netplan files:"
+    ls -la /etc/netplan/
 else
-    log_message "ERROR: Netplan configuration file not found"
+    log_message "ERROR: Failed to create or access netplan configuration file"
     exit 1
 fi
 
