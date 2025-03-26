@@ -150,6 +150,7 @@ network:
       nameservers:
         addresses: [1.1.1.1, 8.8.8.8]
 EOF
+    chmod 600 "$NETPLAN_FILE"
     netplan apply
     check_status "Static IP configuration"
 else
@@ -201,7 +202,14 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 EOF
 
 # Apply new configuration
-systemctl restart ssh
+if systemctl list-unit-files | grep -q "^ssh.service"; then
+    systemctl restart ssh
+elif systemctl list-unit-files | grep -q "^sshd.service"; then
+    systemctl restart sshd
+else
+    log_message "ERROR: SSH service not found"
+    exit 1
+fi
 check_status "SSH configuration"
 
 # Add reminder about SSH key setup
