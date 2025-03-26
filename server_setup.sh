@@ -135,49 +135,19 @@ ufw allow 32400/tcp comment 'Plex'
 echo "y" | ufw enable
 check_status "Firewall configuration"
 
-# Set static IP address
+# Configure network interface
 log_message "Setting static IP address..."
 
-# Create netplan directory if it doesn't exist
-if [ ! -d "/etc/netplan" ]; then
-    mkdir -p /etc/netplan
-    log_message "Created /etc/netplan directory"
-fi
+# Get primary interface
+PRIMARY_INTERFACE=$(ip -o route get 1 | sed -n 's/.*dev \([^\ ]*\).*/\1/p')
+[ -z "$PRIMARY_INTERFACE" ] && { echo "ERROR: Could not determine primary network interface"; exit 1; }
 
-# List current netplan files
-log_message "Current netplan files:"
-ls -la /etc/netplan/
+log_message "Using network interface: $PRIMARY_INTERFACE"
 
-# Show current network interfaces
-log_message "Current network interfaces:"
-ip a
-
-# Determine primary network interface
-PRIMARY_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
-if [ -z "$PRIMARY_INTERFACE" ]; then
-    # Fallback if no default route exists
-    PRIMARY_INTERFACE=$(ip -o link show | grep -v lo | awk -F': ' '{print $2}' | head -1)
-fi
-# Log message moved to avoid duplication
-
-# Set the primary netplan file
-NETPLAN_FILE="/etc/netplan/01-network-manager-all.yaml"
-
-# Create or modify the netplan file
-if [ -f "$NETPLAN_FILE" ]; then
-    log_message "Using existing netplan file: $NETPLAN_FILE"
-else
-    log_message "Creating new netplan file: $NETPLAN_FILE"
-    touch "$NETPLAN_FILE"
-fi
-
-# Ensure proper permissions before writing
-chmod 600 "$NETPLAN_FILE"
-
-# Configure network
-if [ -f "$NETPLAN_FILE" ]; then
-    log_message "Using network interface: $PRIMARY_INTERFACE"
-    cat > "$NETPLAN_FILE" << EOF
+# Create netplan configuration
+NETPLAN_FILE="/etc/netplan/01-netcfg.yaml"
+mkdir -p /etc/netplan
+cat > "$NETPLAN_FILE" << EOF
 network:
     version: 2
     renderer: networkd
@@ -189,25 +159,18 @@ network:
             nameservers:
                 addresses: [1.1.1.1, 8.8.8.8, 8.8.4.4]
 EOF
-    # Set proper permissions
-    chmod 600 "$NETPLAN_FILE"
-    
-    # Try the configuration first
-    log_message "Testing netplan configuration..."
-    if netplan try; then
-        log_message "Netplan configuration test successful, applying permanently..."
-        netplan apply
-        check_status "Static IP configuration"
-    else
-        log_message "ERROR: Netplan configuration test failed, rolling back changes"
-        exit 1
-    fi
 
-    # List updated netplan files
-    log_message "Updated netplan files:"
-    ls -la /etc/netplan/
+# Set proper permissions
+chmod 600 "$NETPLAN_FILE"
+
+# Try the configuration first
+log_message "Testing netplan configuration..."
+if netplan try; then
+    log_message "Netplan configuration test successful, applying permanently..."
+    netplan apply
+    check_status "Static IP configuration"
 else
-    log_message "ERROR: Failed to create or access netplan configuration file"
+    log_message "ERROR: Netplan configuration test failed, rolling back changes"
     exit 1
 fi
 
