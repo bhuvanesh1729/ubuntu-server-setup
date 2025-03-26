@@ -180,7 +180,7 @@ if [ -f "$NETPLAN_FILE" ]; then
     cat > "$NETPLAN_FILE" << EOF
 network:
   version: 2
-  renderer: networkd
+  renderer: NetworkManager
   ethernets:
     $PRIMARY_INTERFACE:
       dhcp4: no
