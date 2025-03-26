@@ -136,8 +136,15 @@ check_status "Firewall configuration"
 
 # Set static IP address
 log_message "Setting static IP address..."
-NETPLAN_FILE=$(find /etc/netplan/ -name "*.yaml")
-if [ -n "$NETPLAN_FILE" ]; then
+# Find the primary netplan file (usually 01-network-manager-all.yaml or similar)
+NETPLAN_FILE="/etc/netplan/01-network-manager-all.yaml"
+if [ ! -f "$NETPLAN_FILE" ]; then
+    # Try to find any netplan file if the default one doesn't exist
+    NETPLAN_FILE=$(find /etc/netplan/ -name "*.yaml" | head -1)
+fi
+
+if [ -n "$NETPLAN_FILE" ] && [ -f "$NETPLAN_FILE" ]; then
+    log_message "Using netplan file: $NETPLAN_FILE"
     cat > "$NETPLAN_FILE" << EOF
 network:
   version: 2
@@ -150,6 +157,7 @@ network:
       nameservers:
         addresses: [1.1.1.1, 8.8.8.8]
 EOF
+    # Set proper permissions
     chmod 600 "$NETPLAN_FILE"
     netplan apply
     check_status "Static IP configuration"
@@ -202,15 +210,23 @@ Subsystem sftp /usr/lib/openssh/sftp-server
 EOF
 
 # Apply new configuration
-if systemctl list-unit-files | grep -q "^ssh.service"; then
+# More robust SSH service detection
+if systemctl list-unit-files | grep -q "ssh.service"; then
     systemctl restart ssh
-elif systemctl list-unit-files | grep -q "^sshd.service"; then
+    check_status "SSH configuration"
+elif systemctl list-unit-files | grep -q "sshd.service"; then
     systemctl restart sshd
+    check_status "SSH configuration"
+elif [ -f "/etc/init.d/ssh" ]; then
+    /etc/init.d/ssh restart
+    check_status "SSH configuration"
+elif [ -f "/etc/init.d/sshd" ]; then
+    /etc/init.d/sshd restart
+    check_status "SSH configuration"
 else
-    log_message "ERROR: SSH service not found"
-    exit 1
+    log_message "WARNING: SSH service not found, continuing without restart"
+    # Don't exit with error, just continue with a warning
 fi
-check_status "SSH configuration"
 
 # Add reminder about SSH key setup
 log_message "IMPORTANT: After setting up SSH keys, edit /etc/ssh/sshd_config and set PasswordAuthentication to 'no'"
